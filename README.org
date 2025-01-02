@@ -32,7 +32,9 @@ After:
 #+BEGIN_SRC emacs-lisp :results silent
 (use-package pretty-ts-errors
   :defer t
-  :quelpa ((pretty-ts-errors :fetcher github :repo "artawower/pretty-ts-errors.el")))
+  :bind (:map meow-normal-state-keymap
+         ("\\e" . pretty-ts-errors-show-error-at-point))
+  :ensure (pretty-ts-errors :host github :repo "artawower/pretty-ts-errors.el"))
   #+END_SRC
 * 🍩 Contribute guide
 Any contribution is very much appreciated!
