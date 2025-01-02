@@ -1,0 +1,39 @@
+:PROPERTIES:
+:ID: pretty-ts-errors.el
+:END:
+
+#+html: <div align='center'>
+#+html: <img src='./images/image.png' width='128px' height='128px'>
+#+html: </div>
+
+#+TITLE: ✨ Pretty ts errors
+
+#+html: <div align='center'>
+#+html: <span class='badge-buymeacoffee'>
+#+html: <a href='https://www.paypal.me/darkawower' title='Paypal' target='_blank'><img src='https://img.shields.io/badge/paypal-donate-blue.svg' alt='Buy Me A Coffee donate button' /></a>
+#+html: </span>
+#+html: <span class='badge-patreon'>
+#+html: <a href='https://patreon.com/artawower' target='_blank' title='Donate to this project using Patreon'><img src='https://img.shields.io/badge/patreon-donate-orange.svg' alt='Patreon donate button' /></a>
+#+html: </span>
+#+html: <a href='https://github.com/artawower/pretty-ts-errors.el/actions/workflows/melpazoid.yml/badge.svg'><img src='https://github.com/artawower/pretty-ts-errors.el/actions/workflows/melpazoid.yml/badge.svg' alt='ci' /></a>
+#+html: </div>
+
+
+* Screenshots
+Before:
+[[./images/before.png]]
+After:
+[[./images/after.png]]
+* Introduction
+* Connected links
+- [[https://github.com/hexh250786313/pretty-ts-errors-markdown][NPM package for pretty ts errors print]]
+- [[https://github.com/yoavbls/pretty-ts-errors][Original Visual studio code extension]]
+*  Install
+#+BEGIN_SRC emacs-lisp :results silent
+(use-package pretty-ts-errors
+  :defer t
+  :quelpa ((pretty-ts-errors :fetcher github :repo "artawower/pretty-ts-errors.el")))
+  #+END_SRC
+* 🍩 Contribute guide
+Any contribution is very much appreciated!
+I would also appreciate it if you would consider becoming my [[https://www.patreon.com/artawower][patron]]
