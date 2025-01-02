@@ -37,3 +37,9 @@ After:
 * 🍩 Contribute guide
 Any contribution is very much appreciated!
 I would also appreciate it if you would consider becoming my [[https://www.patreon.com/artawower][patron]]
+
+Test command:
+
+#+BEGIN_SRC bash
+eldev prepare && eldev -p -dtT -C test
+#+END_SRC

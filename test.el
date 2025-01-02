@@ -1,26 +1,10 @@
-;;; pretty-ts-errors-test.el --- Tests for pretty-ts-errors.el -*- lexical-binding: t; -*-
-
-;; Author: Your Name <you@example.com>
-;; Keywords: lsp, typescript, vue, tests
-;; Package-Requires: ((emacs "29.1") (ert "0") (cl-lib "0.5")) ;; Adjust as needed
-
-;;; Commentary:
-;;
-;; This file provides a suite of ERT tests that exercise the functionality
-;; of pretty-ts-errors.el.  It mocks or stubs out certain functions from
-;; lsp-mode and posframe to avoid requiring an actual LSP server or GUI.
-
-;;; Code:
+;;; test.el --- Tests for pretty-ts-errors.el -*- lexical-binding: t; -*-
 
 (require 'ert)
-(require 'cl-lib)
-(require 'pretty-ts-errors)  ;; Ensure your package is in the `load-path`
-
-
-;;; Test Utilities (Mocks/Stubs)
+(require 'pretty-ts-errors)  ;; Make sure your package is in load-path
 
 (defvar pte--mock-cli-installed t
-  "If non-nil, simulate that the CLI is installed.  Otherwise, pretend it is missing.")
+  "If non-nil, simulate that the CLI is installed. Otherwise, pretend it is missing.")
 
 (defvar pte--mock-workspaces nil
   "Simulated list of LSP workspaces for the current buffer.")
@@ -40,135 +24,145 @@
   "Return `pte--mock-diagnostics`."
   pte--mock-diagnostics)
 
-(defun pte--mock-shell-command-to-string (_cmd)
-  "Stub that returns a fixed Markdown string for testing."
-  "MOCKED-CLI-OUTPUT\n")
-
 (defun pte--mock-lsp-workspace-server-id (ws)
-  "Extract `:server-id` from WS, if present, else return nil."
+  "Return :server-id from WS if present."
   (plist-get ws :server-id))
 
 (defun pte--mock-lsp-get (obj key)
-  "Mock that reads plist OBJ by KEY. Ex: (lsp-get diag :range)."
+  "Return the value of KEY in the plist OBJ, simulating `lsp-get`."
   (plist-get obj key))
 
-(defun pte--mock-lsp--line-character-to-point (_line _char)
-  "Return a simulated buffer position from LINE, CHAR."
-  ;; For simplicity, let's just combine them in a single integer.
-  ;; e.g. line 10 char 5 => 1005
-  ;; Real code in lsp-mode is more sophisticated, but we just need a stable mock.
-  (+ (* _line 100) _char))
+(defun pte--mock-lsp--line-character-to-point (line char)
+  "Mock line->point by combining LINE and CHAR into a single integer (just a stub)."
+  ;; Example: line=0 char=10 => point=10
+  (+ (* line 100) char))
+
+(defun pte--mock-shell-command-to-string (_cmd)
+  "Return a fixed markdown string for testing, ignoring _CMD."
+  "MOCKED-CLI-OUTPUT\n")
 
 (defun pte--mock-posframe-show (&rest _args)
-  "Simulate showing posframe, return a fake frame object symbol."
+  "Create the buffer so `with-current-buffer` doesn't fail, and return a fake frame."
+  (get-buffer-create pretty-ts-errors-posframe-buffer)
   'mock-posframe-frame)
 
 (defun pte--mock-posframe-hide (&rest _args)
-  "Simulate hiding posframe, returns nil."
+  "No-op: pretend posframe is hidden."
   nil)
 
 
-;;; Actual Tests
+;;; Test: CLI missing
 
 (ert-deftest pretty-ts-errors-test-cli-not-installed ()
   "If the CLI is not installed, calling format function should raise an error."
-  (cl-letf (((symbol-function 'pretty-ts-errors--cli-installed-p)
-             #'pte--mock-cli-installed-p)
-            ((symbol-function 'shell-command-to-string)
-             #'pte--mock-shell-command-to-string))
-    (setq pte--mock-cli-installed nil)
-    (should-error
-     (pretty-ts-errors--format-diagnostic '(:message "foo"))
-     :type 'error)))
+  (let ((pte--mock-cli-installed nil))
+    (cl-letf (((symbol-function 'pretty-ts-errors--cli-installed-p)
+               #'pte--mock-cli-installed-p)
+              ((symbol-function 'shell-command-to-string)
+               #'pte--mock-shell-command-to-string))
+      (should-error
+       (pretty-ts-errors--format-diagnostic '(:message "foo"))
+       :type 'error))))
+
+
+;;; Test: No workspace
 
 (ert-deftest pretty-ts-errors-test-no-workspace ()
-  "If there is no TS/Vue workspace, `pretty-ts-errors-show-error-at-point` should error out."
-  (cl-letf (((symbol-function 'lsp-workspaces)
-             #'pte--mock-lsp-workspaces)
-            ((symbol-function 'pretty-ts-errors--cli-installed-p)
-             #'pte--mock-cli-installed-p)
-            ((symbol-function 'shell-command-to-string)
-             #'pte--mock-shell-command-to-string)
-            ((symbol-function 'posframe-show)
-             #'pte--mock-posframe-show)
-            ((symbol-function 'posframe-hide)
-             #'pte--mock-posframe-hide))
-    (setq pte--mock-cli-installed t
-          pte--mock-workspaces nil)
-    (should-error
-     (pretty-ts-errors-show-error-at-point)
-     :type 'error)))
+  "If there is no TS/Vue workspace, `pretty-ts-errors-show-error-at-point` errors."
+  (let ((pte--mock-cli-installed t)
+        (pte--mock-workspaces nil))
+    (cl-letf (((symbol-function 'lsp-workspaces)
+               #'pte--mock-lsp-workspaces)
+              ((symbol-function 'pretty-ts-errors--cli-installed-p)
+               #'pte--mock-cli-installed-p)
+              ((symbol-function 'shell-command-to-string)
+               #'pte--mock-shell-command-to-string)
+              ((symbol-function 'posframe-show)
+               #'pte--mock-posframe-show)
+              ((symbol-function 'posframe-hide)
+               #'pte--mock-posframe-hide))
+      (should-error
+       (pretty-ts-errors-show-error-at-point)
+       :type 'error))))
+
+
+;;; Test: Workspace, no diag
 
 (ert-deftest pretty-ts-errors-test-workspace-but-no-diagnostic ()
-  "If we have a TS/Vue workspace but no diagnostic at point, we should error."
-  (cl-letf (((symbol-function 'lsp-workspaces)
-             #'pte--mock-lsp-workspaces)
-            ((symbol-function 'pretty-ts-errors--cli-installed-p)
-             #'pte--mock-cli-installed-p)
-            ((symbol-function 'posframe-show)
-             #'pte--mock-posframe-show)
-            ((symbol-function 'posframe-hide)
-             #'pte--mock-posframe-hide)
-            ((symbol-function 'shell-command-to-string)
-             #'pte--mock-shell-command-to-string)
-            ((symbol-function 'lsp--get-buffer-diagnostics)
-             #'pte--mock-lsp-get-buffer-diagnostics)
-            ((symbol-function 'lsp--workspace-server-id)
-             #'pte--mock-lsp-workspace-server-id)
-            ((symbol-function 'lsp-get)
-             #'pte--mock-lsp-get)
-            ((symbol-function 'lsp--line-character-to-point)
-             #'pte--mock-lsp--line-character-to-point))
-    (setq pte--mock-cli-installed t
-          pte--mock-workspaces (list '(:server-id ts-ls))
-          pte--mock-diagnostics nil)  ;; no diagnostics
-    (should-error
-     (pretty-ts-errors-show-error-at-point)
-     :type 'error)))
+  "We have a TS/Vue workspace but no diagnostic => error."
+  (let ((pte--mock-cli-installed t)
+        (pte--mock-workspaces (list '(:server-id ts-ls)))
+        (pte--mock-diagnostics nil))
+    (cl-letf (((symbol-function 'lsp-workspaces)
+               #'pte--mock-lsp-workspaces)
+              ((symbol-function 'pretty-ts-errors--cli-installed-p)
+               #'pte--mock-cli-installed-p)
+              ((symbol-function 'posframe-show)
+               #'pte--mock-posframe-show)
+              ((symbol-function 'posframe-hide)
+               #'pte--mock-posframe-hide)
+              ((symbol-function 'shell-command-to-string)
+               #'pte--mock-shell-command-to-string)
+              ((symbol-function 'lsp--get-buffer-diagnostics)
+               #'pte--mock-lsp-get-buffer-diagnostics)
+              ((symbol-function 'lsp--workspace-server-id)
+               #'pte--mock-lsp-workspace-server-id)
+              ((symbol-function 'lsp-get)
+               #'pte--mock-lsp-get)
+              ((symbol-function 'lsp--line-character-to-point)
+               #'pte--mock-lsp--line-character-to-point))
+      (should-error
+       (pretty-ts-errors-show-error-at-point)
+       :type 'error))))
+
+
+;;; Test: Show error success
 
 (ert-deftest pretty-ts-errors-test-show-error ()
-  "Happy-path: we have a TS workspace and a diagnostic at point => posframe is shown."
-  (cl-letf (((symbol-function 'lsp-workspaces)
-             #'pte--mock-lsp-workspaces)
-            ((symbol-function 'pretty-ts-errors--cli-installed-p)
-             #'pte--mock-cli-installed-p)
-            ((symbol-function 'shell-command-to-string)
-             #'pte--mock-shell-command-to-string)
-            ((symbol-function 'lsp--get-buffer-diagnostics)
-             #'pte--mock-lsp-get-buffer-diagnostics)
-            ((symbol-function 'lsp--workspace-server-id)
-             #'pte--mock-lsp-workspace-server-id)
-            ((symbol-function 'lsp-get)
-             #'pte--mock-lsp-get)
-            ((symbol-function 'lsp--line-character-to-point)
-             #'pte--mock-lsp--line-character-to-point)
-            ((symbol-function 'posframe-show)
-             #'pte--mock-posframe-show)
-            ((symbol-function 'posframe-hide)
-             #'pte--mock-posframe-hide))
-    (setq pte--mock-cli-installed t
-          pte--mock-workspaces (list '(:server-id ts-ls))
-          ;; Let's simulate a single diagnostic that covers position 0..999
-          ;; so point=10 is inside it
-          pte--mock-diagnostics (list '(:range
-                                        (:start (:line 0 :character 0)
-                                                :end   (:line 9 :character 99))
-                                        :message "Some TS Error")))
-    ;; Expect no error => success
-    (pretty-ts-errors-show-error-at-point)
-    ;; After success, we can check that `pretty-ts-errors--posframe`
-    ;; has been set to our fake 'mock-posframe-frame
-    (should (eq pretty-ts-errors--posframe 'mock-posframe-frame))))
+  "Happy path: TS workspace + diagnostic at point => posframe is shown."
+  (let ((pte--mock-cli-installed t)
+        (pte--mock-workspaces (list '(:server-id ts-ls)))
+        (pte--mock-diagnostics
+         (list '(:range (:start (:line 0 :character 0)
+                                :end   (:line 9 :character 99))
+                        :message "Some TS Error"))))
+    (cl-letf (((symbol-function 'lsp-workspaces)
+               #'pte--mock-lsp-workspaces)
+              ((symbol-function 'pretty-ts-errors--cli-installed-p)
+               #'pte--mock-cli-installed-p)
+              ((symbol-function 'shell-command-to-string)
+               #'pte--mock-shell-command-to-string)
+              ((symbol-function 'lsp--get-buffer-diagnostics)
+               #'pte--mock-lsp-get-buffer-diagnostics)
+              ((symbol-function 'lsp--workspace-server-id)
+               #'pte--mock-lsp-workspace-server-id)
+              ((symbol-function 'lsp-get)
+               #'pte--mock-lsp-get)
+              ((symbol-function 'lsp--line-character-to-point)
+               #'pte--mock-lsp--line-character-to-point)
+              ((symbol-function 'posframe-show)
+               #'pte--mock-posframe-show)
+              ((symbol-function 'posframe-hide)
+               #'pte--mock-posframe-hide))
+      (setq pretty-ts-errors--posframe nil)
+      (pretty-ts-errors-show-error-at-point)
+      ;; After success, the posframe var should be 'mock-posframe-frame
+      (should (eq pretty-ts-errors--posframe 'mock-posframe-frame)))))
+
+
+;;; Test: Toggle hide
 
 (ert-deftest pretty-ts-errors-test-toggle-hide ()
-  "If posframe is visible, calling show again should hide it."
-  (cl-letf (((symbol-function 'frame-live-p) (lambda (_f) t))
+  "If posframe is visible, calling `pretty-ts-errors-show-error-at-point` hides it."
+  (cl-letf (((symbol-function 'frame-live-p)    (lambda (_f) t))
             ((symbol-function 'frame-visible-p) (lambda (_f) t))
-            ((symbol-function 'posframe-hide) #'pte--mock-posframe-hide))
-    ;; Assume posframe is already visible
+            ((symbol-function 'posframe-hide)    #'pte--mock-posframe-hide))
+    ;; Suppose posframe is already showing
     (setq pretty-ts-errors--posframe 'some-non-nil-frame)
-    ;; Calling show-error-at-point again => should hide posframe, no error
-    (should (pretty-ts-errors-show-error-at-point))
+    ;; Simply call it (no error) => it should hide posframe
+    (pretty-ts-errors-show-error-at-point)
+    ;; Check that it's hidden
     (should (null pretty-ts-errors--posframe))))
 
-;;; pretty-ts-errors-test.el ends here
+(provide 'test)
+;;; test.el ends here

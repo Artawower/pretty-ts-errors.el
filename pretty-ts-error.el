@@ -4,7 +4,7 @@
 
 ;; Author: Artur Yaroshenko <artawower@protonmail.com>
 ;; URL: https://github.com/artawower/blamer.el
-;; Package-Requires: ((emacs "29.1") (posframe "1.4.4") (lsp-mode "9.0.0") (gfm-mode "0.1.0"))
+;; Package-Requires: ((emacs "29.1") (posframe "1.4.4") (lsp-mode "9.0.0"))
 ;; Version: 0.0.1
 
 ;; This program is free software; you can redistribute it and/or modify
