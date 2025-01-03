@@ -25,17 +25,21 @@ Before:
 After:
 [[./images/after.png]]
 * Introduction
+This package allows you to display typescript typing errors via lsp mode in a human-readable way.
+
+A little disclaimer! I have not written a line of code presented in this package, this is just the result of my research on how o1 can handle tasks as if they were described by the end user but not by the developer. 
+
+That's why the package code may be rough and buggy in some places. Thanks for understanding
 * Connected links
 - [[https://github.com/hexh250786313/pretty-ts-errors-markdown][NPM package for pretty ts errors print]]
 - [[https://github.com/yoavbls/pretty-ts-errors][Original Visual studio code extension]]
-*  Install
+* Install and usage
 #+BEGIN_SRC emacs-lisp :results silent
 (use-package pretty-ts-errors
   :defer t
-  :bind (:map meow-normal-state-keymap
-         ("\\e" . pretty-ts-errors-show-error-at-point))
   :ensure (pretty-ts-errors :host github :repo "artawower/pretty-ts-errors.el"))
   #+END_SRC
+  Just M-x =pretty-ts-errors-show-error-at-point= function over lsp-mode error in the typscript based project
 * 🍩 Contribute guide
 Any contribution is very much appreciated!
 I would also appreciate it if you would consider becoming my [[https://www.patreon.com/artawower][patron]]
